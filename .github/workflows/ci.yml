@@ -1,0 +1,89 @@
+
+name: BinaryGuard CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Windows - MSVC
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure
+        run: cmake -S . -B build-ci -G "Visual Studio 17 2022" -A x64
+
+      - name: Build
+        run: cmake --build build-ci --config Release --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build-ci -C Release --output-on-failure
+
+  linux-sanitizers:
+    name: Linux - Clang ASan UBSan
+    runs-on: ubuntu-24.04
+
+    env:
+      ASAN_OPTIONS: detect_leaks=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure
+        run: |
+          cmake -S . -B build-ci -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=clang-18 \
+            "-DCMAKE_C_FLAGS=-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all" \
+            "-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined"
+
+      - name: Build
+        run: cmake --build build-ci --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build-ci --output-on-failure
+
+  fuzz:
+    name: Linux - libFuzzer
+    runs-on: ubuntu-24.04
+
+    env:
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configure
+        run: |
+          cmake -S . -B build-fuzz -G Ninja \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_C_COMPILER=clang-18 \
+            -DBG_ENABLE_FUZZING=ON
+
+      - name: Build fuzzer
+        run: cmake --build build-fuzz --target fuzz_parser --parallel
+
+      - name: Run fuzzing
+        run: |
+          mkdir -p fuzz-corpus fuzz-artifacts
+          cp samples/*.bgd fuzz-corpus/
+          ./build-fuzz/fuzz_parser fuzz-corpus/ \
+            -runs=10000 \
+            -max_len=64 \
+            -artifact_prefix=fuzz-artifacts/
+
+      - name: Save failing inputs
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: fuzz-findings
+          path: fuzz-artifacts/
+          if-no-files-found: ignore

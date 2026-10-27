@@ -1,0 +1,26 @@
+
+# CMake build directories
+build/
+build-*/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+
+# Compiler output
+*.obj
+*.o
+*.pdb
+*.ilk
+*.exe
+
+# Fuzzing output
+fuzz-corpus/
+fuzz-artifacts/
+crash-*
+leak-*
+timeout-*
+
+# System files
+.DS_Store
+Thumbs.db
