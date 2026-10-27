@@ -99,7 +99,7 @@ build\binaryguard.exe samples\valid-nine.bgd
 Example output:
 
 ```text
-BinaryGuard v0.9
+BinaryGuard v1.0.0.
 Magic: BGRD
 Version: 1
 Payload length: 9 bytes

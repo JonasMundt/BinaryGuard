@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     }
 
     // Display file information.
-    printf("BinaryGuard v0.9\n");
+    printf("BinaryGuard v1.0.0\n");
     printf("Magic: BGRD\n");
     printf("Version: %u\n",
            (unsigned int)file.header.version);
