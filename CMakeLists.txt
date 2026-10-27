@@ -86,6 +86,12 @@ add_cli_test(
     1 "CRC32 mismatch"
 )
 
+add_cli_test(
+    CLI_MissingFile
+    samples/nonexistent-final-test.bgd
+    1 "Cannot open file"
+)
+
 # File I/O component tests
 add_executable(test_file_io tests/test_file_io.c)
 
@@ -160,9 +166,23 @@ if(BG_ENABLE_FUZZING)
     )
 endif()
 
+    # Payload size and file boundary tests
+    add_executable(test_payload_limits
+        tests/test_payload_limits.c
+    )
+
+    target_link_libraries(test_payload_limits PRIVATE
+        binaryguard_core
+    )
+
+    add_test(
+        NAME Payload_LimitTests
+        COMMAND test_payload_limits
+    )
+
 
 # Strict compiler warnings
-foreach(target binaryguard_core binaryguard test_crc32 test_parser test_file_io test_boundaries test_fuzz_smoke)
+foreach(target binaryguard_core binaryguard test_crc32 test_parser test_file_io test_boundaries test_fuzz_smoke test_payload_limits)
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /WX)
     else()
@@ -171,3 +191,7 @@ foreach(target binaryguard_core binaryguard test_crc32 test_parser test_file_io 
         )
     endif()
 endforeach()
+
+target_link_libraries(test_payload_limits PRIVATE
+    binaryguard_core
+)
